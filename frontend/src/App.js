@@ -7,7 +7,9 @@ function App() {
 
   useEffect(() => {
     // Check backend connection
-    fetch('/api/status')
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://documed-ai-backend.onrender.com';
+
+    fetch(`${backendUrl}/api/status`)
       .then(response => response.json())
       .then(data => {
         setBackendStatus(data);
