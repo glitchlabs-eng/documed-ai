@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
@@ -53,6 +54,24 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow only specific file types
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, JPG, and PNG files are allowed.'));
+    }
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -76,14 +95,60 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Medical data extraction endpoint (placeholder)
-app.post('/api/extract', (req, res) => {
-  // This is a placeholder for the actual medical data extraction logic
-  res.json({
-    message: 'Medical data extraction endpoint',
-    status: 'ready',
-    note: 'Implementation coming soon'
-  });
+// Medical data extraction endpoint
+app.post('/api/extract', upload.single('document'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'No file uploaded',
+        message: 'Please select a medical document to extract data from'
+      });
+    }
+
+    const file = req.file;
+    console.log(`📄 Processing file: ${file.originalname} (${file.size} bytes)`);
+
+    // Simulate medical data extraction
+    const extractedData = {
+      fileName: file.originalname,
+      fileSize: `${Math.round(file.size / 1024)} KB`,
+      fileType: file.mimetype,
+      processedAt: new Date().toISOString(),
+
+      // Simulated extracted medical data
+      patientInfo: {
+        name: "[Extracted from document]",
+        dateOfBirth: "[Extracted from document]",
+        patientId: "[Extracted from document]"
+      },
+
+      medicalData: {
+        diagnosis: "[AI would extract diagnosis here]",
+        medications: "[AI would extract medications here]",
+        vitals: "[AI would extract vital signs here]",
+        procedures: "[AI would extract procedures here]"
+      },
+
+      confidence: "85%",
+      processingTime: `${Math.random() * 2 + 1}s`
+    };
+
+    res.json({
+      success: true,
+      message: '✅ Medical data extraction completed successfully!',
+      data: extractedData,
+      note: 'This is a demo version. Real AI extraction will be implemented in the full version.',
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Extraction error:', error);
+    res.status(500).json({
+      error: 'Extraction failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Error handling middleware
