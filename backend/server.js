@@ -14,6 +14,7 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:3000',
   'https://documed-ai.vercel.app',
+  /^https:\/\/documed-ai.*\.vercel\.app$/,
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -22,7 +23,17 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    // Check if origin matches any allowed origins (including regex patterns)
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return allowedOrigin === origin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+
+    if (isAllowed) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
